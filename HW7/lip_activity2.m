@@ -1,0 +1,56 @@
+function [rt, p_LIPs, firing_MT, firing_LIP, rates] = lip_activity2(MT_p_values,LIP_weights,LIP_threshold, M)
+    % Parameters:
+    % MT_p_values - a vector with 2 elements, firing probabilities for the
+    % excitatory and inhibitory neurons, resp.
+    % LIP_weights - a length 2 vector of weighting factors for the evidence
+    % from the excitatory (positive) and
+    % inhibitory (negative) neurons
+    % LIP_threshold - the LIP firing rate that represents the choice threshold criterion
+    % use fixed time scale of 1 ms
+    dt = 0.001;
+    N = [0 0]; % plus is first, minus is second
+    rate = 0.0;
+    p_LIPs = [];
+    LIP_event_times1 = [];
+    LIP_event_times2 = [];
+    t = 0;
+    N_LIP1 = 0;
+    N_LIP2 = 0;
+    firing_MT = [];
+    firing_LIP = [];
+    rates = [];
+    rate1 = 0;
+    rate2 = 0;
+    while rate1 < LIP_threshold(1) && rate2 < LIP_threshold(2) && t<0.5
+        t
+        t = t + dt;
+        dN = [];
+        dN(1) = rand() < 0.2*(t>0.1)+0.05;
+        dN(2) = rand() < 0.2*(t<0.1)+0.05;
+        firing_MT = [firing_MT; dN];
+        N = N + dN;
+        p_LIP1 = sum(N*LIP_weights(:,1));
+        p_LIP2 = sum(N*LIP_weights(:,2));
+        p_LIPs = [p_LIPs [p_LIP1; p_LIP2]];
+        LIP_event1 = rand() < p_LIP1;
+        LIP_event2 = rand() < p_LIP2;
+        firing_LIP = [firing_LIP [LIP_event2; LIP_event1]];
+        if(LIP_event1)
+            LIP_event_times1 = [LIP_event_times1 t];
+            N_LIP1 = N_LIP1 + 1;
+        end
+        if(LIP_event2)
+            LIP_event_times2 = [LIP_event_times2 t];
+            N_LIP2 = N_LIP2 + 1;
+        end
+        % check LIP mean rate for last M spikes
+        if(N_LIP1 > M)
+            rate1 = M/(t - LIP_event_times1(N_LIP1 - M));
+        end
+        if(N_LIP2 > M)
+            rate2 = M/(t - LIP_event_times2(N_LIP2 - M));
+        end
+        rates = [rates [rate1;rate2]];
+    end
+    rt = t;
+end
